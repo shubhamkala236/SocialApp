@@ -41,7 +41,13 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-
+builder.Services.AddCors(options =>
+{
+	options.AddPolicy("AllowAngular", policy =>
+		policy.WithOrigins("http://localhost:4200")
+			  .AllowAnyHeader()
+			  .AllowAnyMethod());
+});
 
 var app = builder.Build();
 
@@ -54,6 +60,7 @@ if (app.Environment.IsDevelopment())
 	});
 }
 
+app.UseCors("AllowAngular");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

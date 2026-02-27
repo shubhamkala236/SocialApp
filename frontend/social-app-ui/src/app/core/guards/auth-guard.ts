@@ -1,0 +1,24 @@
+import { inject } from '@angular/core/primitives/di';
+import { CanActivateFn, Router } from '@angular/router';
+import { AuthService } from '../services/auth-service';
+
+export const authGuard: CanActivateFn = () => {
+  const authService = inject(AuthService);
+  const router = inject(Router);
+
+  if (authService.isLoggedIn()) return true;
+
+  router.navigate(['/login']);
+  return false;
+};
+
+export const guestGuard: CanActivateFn = () => {
+  const authService = inject(AuthService);
+  const router = inject(Router);
+
+  // Redirect already logged-in users away from login/register
+  if (!authService.isLoggedIn()) return true;
+
+  router.navigate(['/posts']);
+  return false;
+};

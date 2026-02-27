@@ -1,0 +1,18 @@
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+}
+
+/* Snackbar overrides */
+.snack-success .mdc-snackbar__surface {
+  background: #22c55e !important;
+}
+.snack-error .mdc-snackbar__surface {
+  background: #ef4444 !important;
+}
+.mat-mdc-snack-bar-label {
+  color: white !important;
+}

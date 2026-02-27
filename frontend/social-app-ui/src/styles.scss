@@ -1,0 +1,29 @@
+@use 'tailwindcss';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  box-sizing: border-box;
+}
+
+// Angular Material overrides
+.mat-mdc-form-field {
+  width: 100%;
+}
+
+// Snackbar
+.snack-success .mdc-snackbar__surface {
+  background: #22c55e !important;
+}
+.snack-error .mdc-snackbar__surface {
+  background: #ef4444 !important;
+}
+.mat-mdc-snack-bar-label {
+  color: white !important;
+}
+mat-toolbar {
+  background-color: inherit !important;
+  color: inherit !important;
+}
