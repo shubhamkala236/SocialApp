@@ -27,3 +27,55 @@ mat-toolbar {
   background-color: inherit !important;
   color: inherit !important;
 }
+
+:root {
+  --navbar-height: 64px;
+}
+
+// Dark theme variables
+html.dark {
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --bg-card: rgba(255, 255, 255, 0.05);
+  --bg-card-border: rgba(255, 255, 255, 0.1);
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+}
+
+// Light theme variables
+html.light {
+  --bg-primary: #f8fafc;
+  --bg-secondary: #f1f5f9;
+  --bg-card: rgba(255, 255, 255, 0.9);
+  --bg-card-border: rgba(0, 0, 0, 0.08);
+  --text-primary: #0f172a;
+  --text-secondary: #64748b;
+  --gradient: linear-gradient(135deg, #e0e7ff 0%, #f8fafc 50%, #ede9fe 100%);
+}
+
+html, body {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
+mat-toolbar {
+  overflow: hidden;
+}
+
+.mat-mdc-form-field {
+  width: 100%;
+}
+
+mat-spinner {
+  display: inline-block !important;
+}
+
+:root {
+  --navbar-height: 64px; // Material toolbar default height
+}
+
+// Snackbar
+.snack-success .mdc-snackbar__surface { background: #22c55e !important; }
+.snack-error   .mdc-snackbar__surface { background: #ef4444 !important; }
+.mat-mdc-snack-bar-label { color: white !important; }

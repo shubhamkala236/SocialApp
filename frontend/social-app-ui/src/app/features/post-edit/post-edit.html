@@ -1,0 +1,190 @@
+<!-- post-edit.component.html -->
+<div class="min-h-page transition-colors duration-300"
+     [class]="themeService.isDark() ? 'bg-slate-900' : 'bg-slate-50'">
+  <div class="max-w-2xl mx-auto px-4 py-8">
+
+    <!-- Header -->
+    <div class="flex items-center gap-3 mb-8">
+      <a routerLink="/posts"
+         class="flex items-center justify-center w-9 h-9 rounded-xl
+                transition-colors duration-200 no-underline"
+         [class]="themeService.isDark()
+           ? 'bg-white/10 hover:bg-white/20 text-white'
+           : 'bg-slate-200 hover:bg-slate-300 text-slate-700'">
+        <span class="material-icons text-base">arrow_back</span>
+      </a>
+      <div>
+        <h1 class="text-2xl font-bold"
+            [class]="themeService.isDark() ? 'text-white' : 'text-slate-800'">
+          Edit Post
+        </h1>
+        <p class="text-sm"
+           [class]="themeService.isDark() ? 'text-slate-400' : 'text-slate-500'">
+          Update your post
+        </p>
+      </div>
+    </div>
+
+    <!-- Loading Skeleton -->
+    @if (isFetching()) {
+      <div class="rounded-2xl border p-8 animate-pulse"
+           [class]="themeService.isDark()
+             ? 'bg-white/5 border-white/10'
+             : 'bg-white border-slate-200'">
+        <div class="h-6 rounded-lg mb-6 w-1/3"
+             [class]="themeService.isDark() ? 'bg-white/10' : 'bg-slate-200'"></div>
+        <div class="h-12 rounded-xl mb-6"
+             [class]="themeService.isDark() ? 'bg-white/10' : 'bg-slate-200'"></div>
+        <div class="h-6 rounded-lg mb-4 w-1/4"
+             [class]="themeService.isDark() ? 'bg-white/10' : 'bg-slate-200'"></div>
+        <div class="h-36 rounded-xl"
+             [class]="themeService.isDark() ? 'bg-white/10' : 'bg-slate-200'"></div>
+      </div>
+    }
+
+    <!-- Form Card -->
+    @else {
+      <div class="rounded-2xl border p-6 sm:p-8 transition-all duration-300"
+           [class]="themeService.isDark()
+             ? 'bg-white/5 border-white/10'
+             : 'bg-white border-slate-200 shadow-sm'">
+
+        <form [formGroup]="form" (ngSubmit)="onSubmit()" class="flex flex-col gap-6">
+
+          <!-- Title -->
+          <div class="flex flex-col gap-1.5">
+            <label class="text-sm font-medium"
+                   [class]="themeService.isDark() ? 'text-slate-300' : 'text-slate-700'">
+              Title
+            </label>
+            <mat-form-field appearance="outline" class="w-full"
+                            [class]="themeService.isDark() ? 'dark-field' : 'light-field'">
+              <input matInput formControlName="title"
+                     placeholder="Write a catchy title..." />
+              @if (titleCtrl.touched && titleCtrl.hasError('required')) {
+                <mat-error>Title is required</mat-error>
+              }
+              @if (titleCtrl.touched && titleCtrl.hasError('minlength')) {
+                <mat-error>Minimum 3 characters</mat-error>
+              }
+            </mat-form-field>
+          </div>
+
+          <!-- Content -->
+          <div class="flex flex-col gap-1.5">
+            <label class="text-sm font-medium"
+                   [class]="themeService.isDark() ? 'text-slate-300' : 'text-slate-700'">
+              Content
+            </label>
+            <mat-form-field appearance="outline" class="w-full"
+                            [class]="themeService.isDark() ? 'dark-field' : 'light-field'">
+              <textarea matInput formControlName="content"
+                        rows="6"
+                        placeholder="Write your post content..."></textarea>
+              @if (contentCtrl.touched && contentCtrl.hasError('required')) {
+                <mat-error>Content is required</mat-error>
+              }
+              @if (contentCtrl.touched && contentCtrl.hasError('minlength')) {
+                <mat-error>Minimum 10 characters</mat-error>
+              }
+            </mat-form-field>
+          </div>
+
+          <!-- Image -->
+          <div class="flex flex-col gap-2">
+            <label class="text-sm font-medium"
+                   [class]="themeService.isDark() ? 'text-slate-300' : 'text-slate-700'">
+              Image <span class="text-xs font-normal opacity-60">(optional)</span>
+            </label>
+
+            <!-- New Preview -->
+            @if (imagePreview()) {
+              <div class="relative rounded-xl overflow-hidden">
+                <img [src]="imagePreview()"
+                     alt="New preview"
+                     class="w-full h-56 object-cover" />
+                <div class="absolute top-3 left-3 bg-indigo-600 text-white
+                            text-xs font-medium px-2 py-1 rounded-lg">
+                  New Image
+                </div>
+                <button type="button"
+                        (click)="removeImage()"
+                        class="absolute top-3 right-3 flex items-center gap-1
+                               bg-red-500 hover:bg-red-600 text-white text-xs
+                               font-medium px-3 py-1.5 rounded-lg
+                               transition-colors duration-200">
+                  <span class="material-icons text-sm">close</span>
+                  Remove
+                </button>
+              </div>
+
+            <!-- Existing Image -->
+            } @else if (existingImageUrl()) {
+              <div class="relative rounded-xl overflow-hidden">
+                <img [src]="existingImageUrl()!"
+                     alt="Current image"
+                     class="w-full h-56 object-cover" />
+                <div class="absolute top-3 left-3 bg-black/50 text-white
+                            text-xs font-medium px-2 py-1 rounded-lg">
+                  Current Image
+                </div>
+              </div>
+            }
+
+            <!-- Upload Zone -->
+            <label class="flex flex-col items-center justify-center w-full h-24
+                          border-2 border-dashed rounded-xl cursor-pointer
+                          transition-all duration-200"
+                   [class]="themeService.isDark()
+                     ? 'border-white/20 hover:border-indigo-400 hover:bg-white/5'
+                     : 'border-slate-300 hover:border-indigo-400 hover:bg-indigo-50'">
+              <span class="material-icons mb-1"
+                    [class]="themeService.isDark() ? 'text-slate-500' : 'text-slate-400'">
+                cloud_upload
+              </span>
+              <span class="text-xs"
+                    [class]="themeService.isDark() ? 'text-slate-400' : 'text-slate-500'">
+                {{ existingImageUrl() ? 'Replace image' : 'Upload image' }}
+              </span>
+              <input type="file"
+                     accept="image/*"
+                     class="hidden"
+                     (change)="onImageSelected($event)" />
+            </label>
+          </div>
+
+          <!-- Actions -->
+          <div class="flex gap-3 pt-2">
+            <a routerLink="/posts"
+               class="flex-1 flex items-center justify-center
+                      py-3 rounded-xl font-semibold text-sm
+                      transition-all duration-200 no-underline border"
+               [class]="themeService.isDark()
+                 ? 'border-white/20 text-slate-300 hover:bg-white/10'
+                 : 'border-slate-300 text-slate-600 hover:bg-slate-100'">
+              Cancel
+            </a>
+            <button type="submit"
+                    [disabled]="isLoading()"
+                    class="flex-1 flex items-center justify-center gap-2
+                           bg-indigo-600 hover:bg-indigo-500
+                           disabled:opacity-60 disabled:cursor-not-allowed
+                           text-white font-semibold text-sm
+                           py-3 rounded-xl transition-all duration-200
+                           shadow-lg shadow-indigo-900/30">
+              @if (isLoading()) {
+                <mat-spinner diameter="18" />
+                <span>Saving...</span>
+              } @else {
+                <span class="material-icons text-base">save</span>
+                <span>Save Changes</span>
+              }
+            </button>
+          </div>
+
+        </form>
+      </div>
+    }
+
+  </div>
+</div>

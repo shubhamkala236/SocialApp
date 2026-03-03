@@ -1,0 +1,89 @@
+<!-- post-list.component.html -->
+<div class="min-h-page transition-colors duration-300"
+     [class]="themeService.isDark() ? 'bg-slate-900' : 'bg-slate-50'">
+  <div class="max-w-5xl mx-auto px-4 py-8">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-8">
+      <div>
+        <h1 class="text-3xl font-bold"
+            [class]="themeService.isDark() ? 'text-white' : 'text-slate-800'">
+          Latest Posts
+        </h1>
+        <p class="text-sm mt-1"
+           [class]="themeService.isDark() ? 'text-slate-400' : 'text-slate-500'">
+          {{ posts().length }} posts published
+        </p>
+      </div>
+
+      @if (authService.isLoggedIn()) {
+        <a routerLink="/posts/create"
+           class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500
+                  text-white font-semibold px-4 py-2 rounded-xl
+                  transition-all duration-200 shadow-lg shadow-indigo-900/30
+                  text-sm no-underline">
+          <span class="material-icons text-base">add</span>
+          New Post
+        </a>
+      }
+    </div>
+
+    <!-- Loading -->
+    @if (isLoading()) {
+      <div class="flex flex-col items-center justify-center py-24 gap-4">
+        <mat-spinner diameter="40" />
+        <p class="text-sm"
+           [class]="themeService.isDark() ? 'text-slate-400' : 'text-slate-500'">
+          Loading posts...
+        </p>
+      </div>
+    }
+
+    <!-- Error -->
+    @else if (error()) {
+      <div class="flex flex-col items-center justify-center py-24 gap-4">
+        <span class="material-icons text-5xl text-red-400">error_outline</span>
+        <p class="text-red-400">{{ error() }}</p>
+        <button (click)="loadPosts()"
+                class="bg-indigo-600 hover:bg-indigo-500 text-white
+                       px-4 py-2 rounded-xl text-sm transition-all duration-200">
+          Try Again
+        </button>
+      </div>
+    }
+
+    <!-- Empty State -->
+    @else if (posts().length === 0) {
+      <div class="flex flex-col items-center justify-center py-24 gap-4">
+        <span class="material-icons text-6xl"
+              [class]="themeService.isDark() ? 'text-slate-600' : 'text-slate-300'">
+          article
+        </span>
+        <p class="text-lg font-semibold"
+           [class]="themeService.isDark() ? 'text-slate-400' : 'text-slate-500'">
+          No posts yet
+        </p>
+        @if (authService.isLoggedIn()) {
+          <a routerLink="/posts/create"
+             class="bg-indigo-600 hover:bg-indigo-500 text-white
+                    px-5 py-2 rounded-xl text-sm font-semibold
+                    transition-all duration-200 no-underline">
+            Create the first post
+          </a>
+        }
+      </div>
+    }
+
+    <!-- Posts Grid -->
+    @else {
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        @for (post of posts(); track post.id) {
+          <app-post-card
+            [post]="post"
+            (deletePost)="onDeletePost($event)" />
+        }
+      </div>
+    }
+
+  </div>
+</div>

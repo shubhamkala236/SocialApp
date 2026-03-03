@@ -3,7 +3,6 @@ import { environment } from '../../../environments/environment';
 import { LoginRequest, RegisterRequest, User } from '../models/user.model';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { tap } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',
@@ -22,15 +21,11 @@ export class AuthService {
   constructor(private http: HttpClient, private router: Router) {}
 
   register(request: RegisterRequest) {
-    return this.http.post<User>(`${this.baseURL}/register`, request).pipe(
-      tap(user => this.persistUser(user))
-    );
+    return this.http.post<User>(`${this.baseURL}/register`, request);
   }
 
   login(request: LoginRequest) {
-    return this.http.post<User>(`${this.baseURL}/login`, request).pipe(
-      tap(user => this.persistUser(user))
-    );
+    return this.http.post<User>(`${this.baseURL}/login`, request);
   }
 
   logout() {

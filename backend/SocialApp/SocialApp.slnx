@@ -11,4 +11,5 @@
     <Project Path="PostService/PostService.Domain/PostService.Domain.csproj" />
     <Project Path="PostService/PostService.Infrastructure/PostService.Infrastructure.csproj" />
   </Folder>
+  <Project Path="ApiGateway/ApiGateway.csproj" />
 </Solution>

@@ -2,25 +2,35 @@ import { Routes } from '@angular/router';
 import { authGuard, guestGuard } from './core/guards/auth-guard';
 
 export const routes: Routes = [
-//   { path: '', redirectTo: 'posts', pathMatch: 'full' },
-//   {
-//     path: 'login',
-//     canActivate: [guestGuard],
-//     loadComponent: () =>
-//       import('./features/auth/login/login.component').then(m => m.LoginComponent)
-//   },
-//   {
-//     path: 'register',
-//     canActivate: [guestGuard],
-//     loadComponent: () =>
-//       import('./features/auth/register/register.component').then(m => m.RegisterComponent)
-//   },
-//   {
-//     path: 'posts',
-//     canActivate: [authGuard],
-//     loadComponent: () =>
-//       import('./features/posts/post-list/post-list.component').then(m => m.PostListComponent)
-//   },
-//   { path: '**', redirectTo: 'posts' }
+  { path: '', redirectTo: 'posts', pathMatch: 'full' },
+  {
+    path: 'login',
+    canActivate: [guestGuard],
+    loadComponent: () => import('./features/login/login').then(m => m.Login)
+  },
+  {
+    path: 'register',
+    canActivate: [guestGuard],
+    loadComponent: () =>
+      import('./features/register/register').then(m => m.Register)
+  },
+  {
+    path: 'posts',
+    loadComponent: () =>
+      import('./features/post-list/post-list').then(m => m.PostList)
+  },
+  {
+    path: 'posts/create',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/post-create/post-create').then(m => m.PostCreate)
+  },
+  {
+    path: 'posts/edit/:id',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/post-edit/post-edit').then(m => m.PostEdit)
+  },
+  { path: '**', redirectTo: 'posts' }
 ];
 
