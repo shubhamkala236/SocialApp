@@ -9,7 +9,7 @@ import { CreatePostRequest, Post, UpdatePostRequest } from '../models/post.model
   providedIn: 'root',
 })
 export class PostService {
-  private readonly baseURL = environment.apiURL + '/auth';
+  private readonly baseURL = environment.apiURL + '/posts';
   private readonly storageKey = environment.storageKey;
 
   constructor(private http: HttpClient, private router: Router) {}
