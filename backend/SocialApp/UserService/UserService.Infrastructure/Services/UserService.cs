@@ -1,5 +1,7 @@
 ﻿// UserService.Infrastructure/Services/UserService.cs
+using MassTransit;
 using Microsoft.EntityFrameworkCore;
+using Shared.Contracts.Events;
 using UserService.Application.DTO;
 using UserService.Application.Interfaces;
 using UserService.Domain;
@@ -11,11 +13,13 @@ public class UserService : IUserService
 {
 	private readonly UserDbContext _context;
 	private readonly IPhotoService _photoService;
+	private readonly IPublishEndpoint _publishEndpoint;
 
-	public UserService(UserDbContext context, IPhotoService photoService)
+	public UserService(UserDbContext context, IPhotoService photoService, IPublishEndpoint publishEndpoint)
 	{
 		_context = context;
 		_photoService = photoService;
+		_publishEndpoint = publishEndpoint;
 	}
 
 	public async Task<UserProfileDto?> GetProfileAsync(Guid userId, Guid? currentUserId)
@@ -74,6 +78,13 @@ public class UserService : IUserService
 			{
 				profile.AvatarUrl = result.Url;
 				profile.AvatarPublicId = result.PublicId;
+
+				// ✅ Publish so AuthService can update JWT avatar
+				await _publishEndpoint.Publish(new UserAvatarUpdatedEvent
+				{
+					UserId = userId,
+					AvatarUrl = result.Url
+				});
 			}
 		}
 
@@ -113,18 +124,18 @@ public class UserService : IUserService
 
 	public async Task<bool> FollowUserAsync(Guid followerId, Guid followingId)
 	{
-		// Can't follow yourself
 		if (followerId == followingId) return false;
 
-		// Already following
 		var exists = await _context.Follows
 			.AnyAsync(f => f.FollowerId == followerId && f.FollowingId == followingId);
 		if (exists) return false;
 
-		// Make sure both profiles exist
-		var followerExists = await _context.UserProfiles.AnyAsync(u => u.UserId == followerId);
-		var followingExists = await _context.UserProfiles.AnyAsync(u => u.UserId == followingId);
-		if (!followerExists || !followingExists) return false;
+		var follower = await _context.UserProfiles
+			.FirstOrDefaultAsync(u => u.UserId == followerId);
+		var following = await _context.UserProfiles
+			.FirstOrDefaultAsync(u => u.UserId == followingId);
+
+		if (follower is null || following is null) return false;
 
 		_context.Follows.Add(new Follow
 		{
@@ -133,6 +144,17 @@ public class UserService : IUserService
 		});
 
 		await _context.SaveChangesAsync();
+
+		// ── Publish UserFollowedEvent ──────────────────
+		await _publishEndpoint.Publish(new UserFollowedEvent
+		{
+			FollowerId = followerId,
+			FollowerUsername = follower.Username,
+			FollowingId = followingId,
+			FollowingUsername = following.Username,
+			FollowedAt = DateTime.UtcNow
+		});
+
 		return true;
 	}
 

@@ -7,11 +7,11 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { ThemeService } from '../../core/services/theme-service';
 import { MatTooltipModule } from '@angular/material/tooltip';
-
+import { MatDivider } from '@angular/material/divider';
 
 @Component({
   selector: 'app-navbar',
-  imports: [RouterLink, MatToolbarModule, MatButtonModule, MatIconModule, MatMenuModule, MatTooltipModule],
+  imports: [RouterLink, MatToolbarModule, MatButtonModule, MatIconModule, MatMenuModule, MatTooltipModule, MatDivider],
   templateUrl: './navbar.html',
   styleUrl: './navbar.scss',
 })

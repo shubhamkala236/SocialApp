@@ -7,6 +7,7 @@ export interface Post {
   imageUrl?: string;
   createdAt: string;
   updatedAt?: string;
+  userAvatarUrl?: string;
 }
 
 export interface CreatePostRequest {

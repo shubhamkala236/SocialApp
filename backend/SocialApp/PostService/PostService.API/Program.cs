@@ -1,4 +1,5 @@
 using System.Text;
+using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -37,6 +38,20 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 				Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Secret"]!))
 		};
 	});
+
+builder.Services.AddMassTransit(x =>
+{
+	x.UsingRabbitMq((ctx, cfg) =>
+	{
+		cfg.Host(builder.Configuration["RabbitMQ:Host"], "/", h =>
+		{
+			h.Username(builder.Configuration["RabbitMQ:Username"]!);
+			h.Password(builder.Configuration["RabbitMQ:Password"]!);
+		});
+
+		cfg.ConfigureEndpoints(ctx);
+	});
+});
 
 
 builder.Services.AddControllers();

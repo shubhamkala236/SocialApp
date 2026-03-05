@@ -1,0 +1,39 @@
+// profile.component.scss
+:host { display: block; }
+
+// Dark mode tabs
+:host ::ng-deep .dark-tabs {
+  .mat-mdc-tab-header {
+    background: transparent;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+  .mat-mdc-tab .mdc-tab__text-label {
+    color: rgba(255,255,255,0.5);
+  }
+  .mat-mdc-tab.mdc-tab--active .mdc-tab__text-label {
+    color: white;
+  }
+  .mdc-tab-indicator__content--underline {
+    border-color: #6366f1;
+  }
+  .mat-mdc-tab-body-wrapper {
+    background: transparent;
+  }
+}
+
+// Light mode tabs
+:host ::ng-deep .light-tabs {
+  .mat-mdc-tab-header {
+    background: transparent;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  .mat-mdc-tab .mdc-tab__text-label {
+    color: #64748b;
+  }
+  .mat-mdc-tab.mdc-tab--active .mdc-tab__text-label {
+    color: #1e293b;
+  }
+  .mdc-tab-indicator__content--underline {
+    border-color: #6366f1;
+  }
+}

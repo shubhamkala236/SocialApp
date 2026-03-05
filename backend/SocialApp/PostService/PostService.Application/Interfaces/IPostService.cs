@@ -10,7 +10,8 @@ namespace PostService.Application.Interfaces
 		Task<IEnumerable<PostResponseDto>> GetAllPostsAsync();
 		Task<PostResponseDto?> GetPostByIdAsync(Guid id);
 		Task<IEnumerable<PostResponseDto>> GetPostsByUserIdAsync(Guid userId);
-		Task<PostResponseDto> CreatePostAsync(CreatePostDto dto, Guid userId, string username);
+		Task<PostResponseDto> CreatePostAsync(
+			CreatePostDto dto, Guid userId, string username, string? userAvatarUrl);
 		Task<PostResponseDto?> UpdatePostAsync(Guid id, UpdatePostDto dto, Guid userId);
 		Task<bool> DeletePostAsync(Guid id, Guid userId);
 	}

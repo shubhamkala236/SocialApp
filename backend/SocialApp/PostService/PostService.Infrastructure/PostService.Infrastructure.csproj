@@ -8,6 +8,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="CloudinaryDotNet" Version="1.28.0" />
+		<PackageReference Include="MassTransit.RabbitMQ" Version="9.0.1" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.3" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.3">
 			<PrivateAssets>all</PrivateAssets>
@@ -16,6 +17,7 @@
 	</ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\Shared\Shared.Contracts\Shared.Contracts.csproj" />
     <ProjectReference Include="..\PostService.Application\PostService.Application.csproj" />
   </ItemGroup>
 

@@ -31,6 +31,17 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/post-edit/post-edit').then(m => m.PostEdit)
   },
+  {
+    path: 'saved',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/saved-posts/saved-posts').then(m => m.SavedPostsComponent)
+  },
+  {
+    path: 'profile/:userId',
+    loadComponent: () =>
+      import('./features/profile/profile').then(m => m.ProfileComponent)
+  },
   { path: '**', redirectTo: 'posts' }
 ];
 

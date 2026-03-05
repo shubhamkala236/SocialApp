@@ -1,7 +1,9 @@
 using System.Text;
 using AuthService.Application.Interface;
+using AuthService.Infrastructure.Consumers;
 using AuthService.Infrastructure.Context;
 using AuthService.Infrastructure.Service;
+using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -31,6 +33,27 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 			IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Secret"]!))
 		};
 	});
+
+builder.Services.AddMassTransit(x =>
+{
+	x.AddConsumer<UserAvatarUpdatedConsumer>();  // ✅ add this
+
+	x.UsingRabbitMq((ctx, cfg) =>
+	{
+		cfg.Host(builder.Configuration["RabbitMQ:Host"], "/", h =>
+		{
+			h.Username(builder.Configuration["RabbitMQ:Username"]!);
+			h.Password(builder.Configuration["RabbitMQ:Password"]!);
+		});
+
+		cfg.ReceiveEndpoint("auth-avatar-updated-queue", e =>
+		{
+			e.ConfigureConsumer<UserAvatarUpdatedConsumer>(ctx);
+		});
+
+		cfg.ConfigureEndpoints(ctx);
+	});
+});
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();

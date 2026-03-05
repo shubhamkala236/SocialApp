@@ -20,6 +20,12 @@
 
       @if (authService.isLoggedIn()) {
         <span class="text-indigo-100 text-sm mr-2">👋 {{ authService.username() }}</span>
+        <a routerLink="/saved"
+          mat-icon-button
+          matTooltip="Saved Posts"
+          class="flex-shrink-0">
+          <mat-icon class="!text-white">bookmark</mat-icon>
+        </a>
         <a routerLink="/posts/create" mat-stroked-button class="!text-white !border-white">
           <mat-icon>add</mat-icon> New Post
         </a>
@@ -27,8 +33,14 @@
           <mat-icon class="!text-white">account_circle</mat-icon>
         </button>
         <mat-menu #userMenu="matMenu">
+          <a mat-menu-item [routerLink]="['/profile', authService.userId()]">
+            <mat-icon>account_circle</mat-icon>
+            <span>My Profile</span>
+          </a>
+          <mat-divider></mat-divider>
           <button mat-menu-item (click)="authService.logout()">
-            <mat-icon>logout</mat-icon> Logout
+            <mat-icon>logout</mat-icon>
+            <span>Logout</span>
           </button>
         </mat-menu>
       } @else {
@@ -56,6 +68,10 @@
 
       <mat-menu #mobileMenu="matMenu">
         @if (authService.isLoggedIn()) {
+          <button mat-menu-item [routerLink]="['/profile', authService.userId()]">
+            <mat-icon>account_circle</mat-icon>
+            <span>My Profile</span>
+          </button>
           <button mat-menu-item routerLink="/posts/create">
             <mat-icon>add</mat-icon> New Post
           </button>

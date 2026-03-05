@@ -11,6 +11,8 @@ import { ThemeService } from '../../core/services/theme-service';
 import { ToastService } from '../../core/services/toast.service';
 import { Post } from '../../core/models/post.model';
 import { PostCard } from '../post-card/post-card';
+import { InteractionService } from '../../core/services/interaction-service';
+import { PostInteraction } from '../../core/models/interaction.model';
 
 @Component({
   selector: 'app-post-list',
@@ -28,16 +30,16 @@ export class PostList implements OnInit{
     private postService: PostService,
     public authService: AuthService,
     public themeService: ThemeService,
-    public toastService: ToastService
+    public toast: ToastService,
+    private interactionService : InteractionService
   ) {}
 
-  posts     = signal<Post[]>([]);
-  isLoading = signal(true);
-  error     = signal('');
+  posts        = signal<Post[]>([]);
+  interactions = signal<Map<string, PostInteraction>>(new Map());
+  isLoading    = signal(true);
+  error        = signal('');
 
-  ngOnInit() {
-    this.loadPosts();
-  }
+  ngOnInit() { this.loadPosts(); }
 
   loadPosts() {
     this.isLoading.set(true);
@@ -45,6 +47,7 @@ export class PostList implements OnInit{
       next: (posts) => {
         this.posts.set(posts);
         this.isLoading.set(false);
+        if (posts.length > 0) this.loadInteractions(posts);
       },
       error: () => {
         this.error.set('Failed to load posts.');
@@ -53,15 +56,30 @@ export class PostList implements OnInit{
     });
   }
 
+  loadInteractions(posts: Post[]) {
+    const postIds = posts.map(p => p.id);
+    this.interactionService.getBatchInteractions(postIds).subscribe({
+      next: (interactions) => {
+        const map = new Map<string, PostInteraction>();
+        interactions.forEach(i => map.set(i.postId, i));
+        this.interactions.set(map);
+      }
+    });
+  }
+
+  getInteraction(postId: string): PostInteraction | null {
+    return this.interactions().get(postId) ?? null;
+  }
+
   onDeletePost(id: string) {
     if (!confirm('Are you sure you want to delete this post?')) return;
 
     this.postService.deletePost(id).subscribe({
       next: () => {
         this.posts.update(posts => posts.filter(p => p.id !== id));
-        this.toastService.success('Post deleted successfully.');
+        this.toast.success('Post deleted.');
       },
-      error: () => this.toastService.error('Failed to delete post.')
+      error: () => this.toast.error('Failed to delete post.')
     });
   }
 }

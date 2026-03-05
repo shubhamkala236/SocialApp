@@ -4,6 +4,24 @@ export interface User {
   token: string;
 }
 
+export interface UserProfile {
+  userId: string;
+  username: string;
+  email: string;
+  bio?: string;
+  avatarUrl?: string;
+  followersCount: number;
+  followingCount: number;
+  isFollowing: boolean;
+  createdAt: string;
+}
+
+export interface FollowUser {
+  userId: string;
+  username: string;
+  avatarUrl?: string;
+}
+
 export interface LoginRequest {
   email: string;
   password: string;

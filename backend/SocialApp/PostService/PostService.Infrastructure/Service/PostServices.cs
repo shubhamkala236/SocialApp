@@ -1,8 +1,10 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using MassTransit;
+using Microsoft.EntityFrameworkCore;
 using PostService.Application.DTO;
 using PostService.Application.Interfaces;
 using PostService.Domain;
 using PostService.Infrastructure.Context;
+using Shared.Contracts.Events;
 
 namespace PostService.Infrastructure.Service
 {
@@ -10,11 +12,13 @@ namespace PostService.Infrastructure.Service
 	{
 		private readonly PostDbContext _context;
 		private readonly IPhotoService _photoService;
+		private readonly IPublishEndpoint _publishEndpoint;
 
-		public PostServices(PostDbContext context, IPhotoService photoService)
+		public PostServices(PostDbContext context, IPhotoService photoService, IPublishEndpoint publishEndpoint)
 		{
 			_context = context;
 			_photoService = photoService;
+			_publishEndpoint = publishEndpoint;
 		}
 
 		public async Task<IEnumerable<PostResponseDto>> GetAllPostsAsync()
@@ -40,17 +44,17 @@ namespace PostService.Infrastructure.Service
 				.ToListAsync();
 		}
 
-		public async Task<PostResponseDto> CreatePostAsync(CreatePostDto dto, Guid userId, string username)
+		public async Task<PostResponseDto> CreatePostAsync(CreatePostDto dto, Guid userId, string username, string? userAvatarUrl)
 		{
 			var post = new Post
 			{
 				Title = dto.Title,
 				Content = dto.Content,
 				UserId = userId,
-				Username = username
+				Username = username,
+				UserAvatarUrl = userAvatarUrl
 			};
 
-			// Upload image if provided
 			if (dto.Image is not null)
 			{
 				var uploadResult = await _photoService.UploadPhotoAsync(dto.Image);
@@ -63,6 +67,16 @@ namespace PostService.Infrastructure.Service
 
 			_context.Posts.Add(post);
 			await _context.SaveChangesAsync();
+
+			await _publishEndpoint.Publish(new PostCreatedEvent
+			{
+				PostId = post.Id,
+				UserId = userId,
+				Username = username,
+				Title = post.Title,
+				CreatedAt = post.CreatedAt
+			});
+
 			return MapToDto(post);
 		}
 
@@ -113,6 +127,15 @@ namespace PostService.Infrastructure.Service
 
 			_context.Posts.Remove(post);
 			await _context.SaveChangesAsync();
+
+			// ── Publish PostDeletedEvent ───────────────────
+			await _publishEndpoint.Publish(new PostDeletedEvent
+			{
+				PostId = id,
+				UserId = userId,
+				DeletedAt = DateTime.UtcNow
+			});
+
 			return true;
 		}
 
@@ -123,6 +146,7 @@ namespace PostService.Infrastructure.Service
 			Content = post.Content,
 			UserId = post.UserId,
 			Username = post.Username,
+			UserAvatarUrl = post.UserAvatarUrl,
 			ImageUrl = post.ImageUrl,
 			CreatedAt = post.CreatedAt,
 			UpdatedAt = post.UpdatedAt
