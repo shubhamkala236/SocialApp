@@ -5,11 +5,23 @@
     <Project Path="AuthService/AuthService.Domain/AuthService.Domain.csproj" />
     <Project Path="AuthService/AuthService.Infrastructure/AuthService.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/InteractionService/">
+    <Project Path="InteractionService/InteractionService.API/InteractionService.API.csproj" />
+    <Project Path="InteractionService/InteractionService.Application/InteractionService.Application.csproj" />
+    <Project Path="InteractionService/InteractionService.Domain/InteractionService.Domain.csproj" />
+    <Project Path="InteractionService/InteractionService.Infrastructure/InteractionService.Infrastructure.csproj" />
+  </Folder>
   <Folder Name="/PostService/">
     <Project Path="PostService/PostService.API/PostService.API.csproj" />
     <Project Path="PostService/PostService.Application/PostService.Application.csproj" />
     <Project Path="PostService/PostService.Domain/PostService.Domain.csproj" />
     <Project Path="PostService/PostService.Infrastructure/PostService.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/UserService/">
+    <Project Path="UserService/UserService.API/UserService.API.csproj" />
+    <Project Path="UserService/UserService.Application/UserService.Application.csproj" />
+    <Project Path="UserService/UserService.Domain/UserService.Domain.csproj" />
+    <Project Path="UserService/UserService.Infrastructure/UserService.Infrastructure.csproj" />
   </Folder>
   <Project Path="ApiGateway/ApiGateway.csproj" />
 </Solution>
