@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, inject, signal } from '@angular/core';
+import { Component, Input, Output, EventEmitter, inject, signal, SimpleChanges, OnChanges } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
@@ -18,12 +18,13 @@ import { MatTooltipModule } from '@angular/material/tooltip';
   templateUrl: './post-card.html',
   styleUrl: './post-card.scss',
 })
-export class PostCard {
+export class PostCard implements OnChanges {
   @Input() post!: Post;
   @Input() interaction: PostInteraction | null = null;
   @Output() deletePost = new EventEmitter<string>();
 
-  constructor(private authService: AuthService, public themeService: ThemeService, public intService: InteractionService, public toast: ToastService) {}
+  constructor(private authService: AuthService, public themeService: ThemeService, public intService: InteractionService, public toast: ToastService) {
+  }
   
   // ── Signals ──────────────────────────────────
   isLiked    = signal(false);
@@ -45,9 +46,9 @@ export class PostCard {
     if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
     return `${Math.floor(diff / 86400)}d ago`;
   }
-
-  ngOnInit() {
-    if (this.interaction) {
+  
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['interaction'] && this.interaction) {
       this.isLiked.set(this.interaction.isLiked);
       this.isSaved.set(this.interaction.isSaved);
       this.likesCount.set(this.interaction.likesCount);

@@ -37,6 +37,10 @@
             <mat-icon>account_circle</mat-icon>
             <span>My Profile</span>
           </a>
+          <a mat-menu-item routerLink="/settings">   <!-- ✅ this goes to edit profile -->
+            <mat-icon>settings</mat-icon>
+            <span>Settings</span>
+          </a>
           <mat-divider></mat-divider>
           <button mat-menu-item (click)="authService.logout()">
             <mat-icon>logout</mat-icon>

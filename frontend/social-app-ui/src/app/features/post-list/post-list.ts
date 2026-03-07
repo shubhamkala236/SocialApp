@@ -46,6 +46,8 @@ export class PostList implements OnInit{
     this.postService.getAllPosts().subscribe({
       next: (posts) => {
         this.posts.set(posts);
+        console.log(this.posts());
+        
         this.isLoading.set(false);
         if (posts.length > 0) this.loadInteractions(posts);
       },
