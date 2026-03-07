@@ -34,13 +34,14 @@ namespace PostService.API.Controller
 			Ok(await _postService.GetPostsByUserIdAsync(userId));
 
 		[HttpPost]
-		[Consumes("multipart/form-data")]   // ← important for file upload
+		[Consumes("multipart/form-data")]
 		public async Task<IActionResult> Create([FromForm] CreatePostDto dto)
 		{
 			var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 			var username = User.FindFirstValue(ClaimTypes.Name)!;
+			var avatarUrl = User.FindFirstValue("avatarUrl"); // ✅ add this
 
-			var post = await _postService.CreatePostAsync(dto, userId, username);
+			var post = await _postService.CreatePostAsync(dto, userId, username, avatarUrl); // ✅ pass it
 			return CreatedAtAction(nameof(GetById), new { id = post.Id }, post);
 		}
 

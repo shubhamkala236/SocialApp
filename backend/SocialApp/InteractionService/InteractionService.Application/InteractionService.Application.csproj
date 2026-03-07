@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\InteractionService.Domain\InteractionService.Domain.csproj" />
+    <ProjectReference Include="..\..\Shared\Shared.Contracts\Shared.Contracts.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

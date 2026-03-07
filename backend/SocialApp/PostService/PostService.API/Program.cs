@@ -1,9 +1,11 @@
 using System.Text;
+using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using PostService.Application.Interfaces;
 using PostService.Application.Settings;
+using PostService.Infrastructure.Consumers;
 using PostService.Infrastructure.Context;
 using PostService.Infrastructure.Service;
 
@@ -37,6 +39,41 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 				Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Secret"]!))
 		};
 	});
+
+//builder.Services.AddMassTransit(x =>
+//{
+//	x.UsingRabbitMq((ctx, cfg) =>
+//	{
+//		cfg.Host(builder.Configuration["RabbitMQ:Host"], "/", h =>
+//		{
+//			h.Username(builder.Configuration["RabbitMQ:Username"]!);
+//			h.Password(builder.Configuration["RabbitMQ:Password"]!);
+//		});
+
+//		cfg.ConfigureEndpoints(ctx);
+//	});
+//});
+
+builder.Services.AddMassTransit(x =>
+{
+	x.AddConsumer<UserAvatarUpdatedConsumer>();
+
+	x.UsingRabbitMq((ctx, cfg) =>
+	{
+		cfg.Host(builder.Configuration["RabbitMQ:Host"], "/", h =>
+		{
+			h.Username(builder.Configuration["RabbitMQ:Username"]!);
+			h.Password(builder.Configuration["RabbitMQ:Password"]!);
+		});
+
+		cfg.ReceiveEndpoint("post-avatar-updated-queue", e =>
+		{
+			e.ConfigureConsumer<UserAvatarUpdatedConsumer>(ctx);
+		});
+
+		cfg.ConfigureEndpoints(ctx);
+	});
+});
 
 
 builder.Services.AddControllers();

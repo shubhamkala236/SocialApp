@@ -11,8 +11,9 @@ namespace PostService.Domain
 		public string Content { get; set; } = string.Empty;
 		public Guid UserId { get; set; }
 		public string Username { get; set; } = string.Empty;
-		public string? ImageUrl { get; set; }        // Cloudinary URL
-		public string? ImagePublicId { get; set; }   // Cloudinary PublicId (needed for deletion)
+		public string? UserAvatarUrl { get; set; }   // ✅ add this
+		public string? ImageUrl { get; set; }
+		public string? ImagePublicId { get; set; }
 		public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 		public DateTime? UpdatedAt { get; set; }
 	}

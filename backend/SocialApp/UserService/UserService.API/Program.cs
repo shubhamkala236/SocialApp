@@ -1,9 +1,11 @@
 using System.Text;
+using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using UserService.Application;
 using UserService.Application.Interfaces;
+using UserService.Infrastructure.Consumers;
 using UserService.Infrastructure.Context;
 using UserService.Infrastructure.Services;
 
@@ -37,6 +39,36 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 				Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Secret"]!))
 		};
 	});
+
+builder.Services.AddMassTransit(x =>
+{
+	// ── Register Consumers ────────────────────────
+	x.AddConsumer<UserRegisteredConsumer>();
+	x.AddConsumer<UserDeletedConsumer>();
+
+	x.UsingRabbitMq((ctx, cfg) =>
+	{
+		cfg.Host(builder.Configuration["RabbitMQ:Host"], "/", h =>
+		{
+			h.Username(builder.Configuration["RabbitMQ:Username"]!);
+			h.Password(builder.Configuration["RabbitMQ:Password"]!);
+		});
+
+		// ── Receive Endpoints ─────────────────────
+		cfg.ReceiveEndpoint("user-registered-queue", e =>
+		{
+			e.ConfigureConsumer<UserRegisteredConsumer>(ctx);
+		});
+
+		cfg.ReceiveEndpoint("user-deleted-queue", e =>
+		{
+			e.ConfigureConsumer<UserDeletedConsumer>(ctx);
+		});
+
+		cfg.ConfigureEndpoints(ctx);
+	});
+});
+
 
 builder.Services.AddAuthorization();
 

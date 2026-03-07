@@ -11,6 +11,7 @@ namespace PostService.Application.DTO
 		public string Content { get; set; } = string.Empty;
 		public Guid UserId { get; set; }
 		public string Username { get; set; } = string.Empty;
+		public string? UserAvatarUrl { get; set; }   // ✅ add this
 		public string? ImageUrl { get; set; }
 		public DateTime CreatedAt { get; set; }
 		public DateTime? UpdatedAt { get; set; }

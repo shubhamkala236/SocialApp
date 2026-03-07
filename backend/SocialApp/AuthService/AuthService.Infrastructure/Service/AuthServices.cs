@@ -5,9 +5,11 @@ using AuthService.Application.DTO;
 using AuthService.Application.Interface;
 using AuthService.Domain;
 using AuthService.Infrastructure.Context;
+using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
+using Shared.Contracts.Events;
 
 namespace AuthService.Infrastructure.Service
 {
@@ -15,11 +17,14 @@ namespace AuthService.Infrastructure.Service
 	{
 		private readonly AuthDbContext _context;
 		private readonly IConfiguration _config;
+		private readonly IPublishEndpoint _publishEndpoint;
 
-		public AuthServices(AuthDbContext context, IConfiguration config)
+
+		public AuthServices(AuthDbContext context, IConfiguration config, IPublishEndpoint publishEndpoint)
 		{
 			_context = context;
 			_config = config;
+			_publishEndpoint = publishEndpoint;
 		}
 
 		public async Task<AuthResponseDto> RegisterAsync(RegisterDto dto)
@@ -37,6 +42,15 @@ namespace AuthService.Infrastructure.Service
 
 			_context.Users.Add(user);
 			await _context.SaveChangesAsync();
+
+			// ── Publish UserRegisteredEvent ────────────
+			await _publishEndpoint.Publish(new UserRegisteredEvent
+			{
+				UserId = user.Id,
+				Username = user.Username,
+				Email = user.Email,
+				RegisteredAt = DateTime.UtcNow
+			});
 
 			return new AuthResponseDto
 			{
@@ -67,22 +81,46 @@ namespace AuthService.Infrastructure.Service
 			var key = new SymmetricSecurityKey(
 				Encoding.UTF8.GetBytes(_config["Jwt:Secret"]!));
 
-			var claims = new[]
-			{
-				new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-				new Claim(ClaimTypes.Name, user.Username),
-				new Claim(ClaimTypes.Email, user.Email)
-			};
+			var claims = new List<Claim>
+	{
+		new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+		new Claim(ClaimTypes.Name, user.Username),
+		new Claim(ClaimTypes.Email, user.Email)
+	};
+
+			// ✅ Add avatarUrl if exists
+			if (!string.IsNullOrEmpty(user.AvatarUrl))
+				claims.Add(new Claim("avatarUrl", user.AvatarUrl));
 
 			var token = new JwtSecurityToken(
 				issuer: _config["Jwt:Issuer"],
 				audience: _config["Jwt:Audience"],
 				claims: claims,
-				expires: DateTime.Now.AddDays(7),
-				signingCredentials: new SigningCredentials(key, SecurityAlgorithms.HmacSha256)
-			);
+				expires: DateTime.UtcNow.AddDays(7),
+				signingCredentials: new SigningCredentials(
+					key, SecurityAlgorithms.HmacSha256));
 
 			return new JwtSecurityTokenHandler().WriteToken(token);
 		}
+
+		public async Task<bool> DeleteAccountAsync(Guid userId)
+		{
+			var user = await _context.Users.FindAsync(userId);
+			if (user is null) return false;
+
+			_context.Users.Remove(user);
+			await _context.SaveChangesAsync();
+
+			// ── Publish UserDeletedEvent ───────────────
+			await _publishEndpoint.Publish(new UserDeletedEvent
+			{
+				UserId = userId,
+				Username = user.Username,
+				DeletedAt = DateTime.UtcNow
+			});
+
+			return true;
+		}
+
 	}
 }

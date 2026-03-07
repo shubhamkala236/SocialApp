@@ -1,18 +1,17 @@
-<!-- post-list.component.html -->
 <div class="min-h-page transition-colors duration-300"
      [class]="themeService.isDark() ? 'bg-slate-900' : 'bg-slate-50'">
-  <div class="max-w-5xl mx-auto px-4 py-8">
+  <div class="max-w-2xl mx-auto px-4 py-8">
 
     <!-- Header -->
-    <div class="flex items-center justify-between mb-8">
+    <div class="flex items-center justify-between mb-6">
       <div>
-        <h1 class="text-3xl font-bold"
+        <h1 class="text-2xl font-bold"
             [class]="themeService.isDark() ? 'text-white' : 'text-slate-800'">
-          Latest Posts
+          Feed
         </h1>
-        <p class="text-sm mt-1"
+        <p class="text-sm mt-0.5"
            [class]="themeService.isDark() ? 'text-slate-400' : 'text-slate-500'">
-          {{ posts().length }} posts published
+          {{ posts().length }} posts
         </p>
       </div>
 
@@ -28,14 +27,44 @@
       }
     </div>
 
-    <!-- Loading -->
+    <!-- Loading Skeleton -->
     @if (isLoading()) {
-      <div class="flex flex-col items-center justify-center py-24 gap-4">
-        <mat-spinner diameter="40" />
-        <p class="text-sm"
-           [class]="themeService.isDark() ? 'text-slate-400' : 'text-slate-500'">
-          Loading posts...
-        </p>
+      <div class="flex flex-col gap-4">
+        @for (i of [1,2,3,4]; track i) {
+          <div class="rounded-2xl border p-5 animate-pulse"
+               [class]="themeService.isDark()
+                 ? 'bg-white/5 border-white/10'
+                 : 'bg-white border-slate-200'">
+            <!-- Author row -->
+            <div class="flex items-center gap-3 mb-4">
+              <div class="w-10 h-10 rounded-full"
+                   [class]="themeService.isDark()
+                     ? 'bg-white/10' : 'bg-slate-200'"></div>
+              <div class="flex flex-col gap-1.5">
+                <div class="h-3 w-24 rounded"
+                     [class]="themeService.isDark()
+                       ? 'bg-white/10' : 'bg-slate-200'"></div>
+                <div class="h-2.5 w-16 rounded"
+                     [class]="themeService.isDark()
+                       ? 'bg-white/10' : 'bg-slate-200'"></div>
+              </div>
+            </div>
+            <!-- Content -->
+            <div class="h-5 w-3/4 rounded mb-3"
+                 [class]="themeService.isDark()
+                   ? 'bg-white/10' : 'bg-slate-200'"></div>
+            <div class="h-4 w-full rounded mb-2"
+                 [class]="themeService.isDark()
+                   ? 'bg-white/10' : 'bg-slate-200'"></div>
+            <div class="h-4 w-2/3 rounded mb-4"
+                 [class]="themeService.isDark()
+                   ? 'bg-white/10' : 'bg-slate-200'"></div>
+            <!-- Image placeholder -->
+            <div class="h-56 w-full rounded-xl"
+                 [class]="themeService.isDark()
+                   ? 'bg-white/10' : 'bg-slate-200'"></div>
+          </div>
+        }
       </div>
     }
 
@@ -43,20 +72,22 @@
     @else if (error()) {
       <div class="flex flex-col items-center justify-center py-24 gap-4">
         <span class="material-icons text-5xl text-red-400">error_outline</span>
-        <p class="text-red-400">{{ error() }}</p>
+        <p class="text-red-400 font-medium">{{ error() }}</p>
         <button (click)="loadPosts()"
                 class="bg-indigo-600 hover:bg-indigo-500 text-white
-                       px-4 py-2 rounded-xl text-sm transition-all duration-200">
+                       px-5 py-2 rounded-xl text-sm font-semibold
+                       transition-all duration-200">
           Try Again
         </button>
       </div>
     }
 
-    <!-- Empty State -->
+    <!-- Empty -->
     @else if (posts().length === 0) {
       <div class="flex flex-col items-center justify-center py-24 gap-4">
         <span class="material-icons text-6xl"
-              [class]="themeService.isDark() ? 'text-slate-600' : 'text-slate-300'">
+              [class]="themeService.isDark()
+                ? 'text-slate-600' : 'text-slate-300'">
           article
         </span>
         <p class="text-lg font-semibold"
@@ -74,12 +105,13 @@
       </div>
     }
 
-    <!-- Posts Grid -->
+    <!-- Vertical Feed -->
     @else {
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div class="flex flex-col gap-4">
         @for (post of posts(); track post.id) {
           <app-post-card
             [post]="post"
+            [interaction]="getInteraction(post.id)"
             (deletePost)="onDeletePost($event)" />
         }
       </div>

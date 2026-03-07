@@ -1,0 +1,278 @@
+<div class="min-h-page transition-colors duration-300"
+     [class]="themeService.isDark() ? 'bg-slate-900' : 'bg-slate-50'">
+  <div class="max-w-2xl mx-auto px-4 py-8">
+
+    <!-- Header -->
+    <div class="flex items-center gap-3 mb-8">
+      <a [routerLink]="['/profile', authService.userId()]"
+         class="flex items-center justify-center w-9 h-9 rounded-xl
+                transition-colors duration-200 no-underline"
+         [class]="themeService.isDark()
+           ? 'bg-white/10 hover:bg-white/20 text-white'
+           : 'bg-slate-200 hover:bg-slate-300 text-slate-700'">
+        <span class="material-icons text-base">arrow_back</span>
+      </a>
+      <div>
+        <h1 class="text-2xl font-bold"
+            [class]="themeService.isDark() ? 'text-white' : 'text-slate-800'">
+          Edit Profile
+        </h1>
+        <p class="text-sm"
+           [class]="themeService.isDark() ? 'text-slate-400' : 'text-slate-500'">
+          Update your profile information
+        </p>
+      </div>
+    </div>
+
+    <!-- Loading Skeleton -->
+    @if (isLoading()) {
+      <div class="rounded-2xl border p-8 animate-pulse"
+           [class]="themeService.isDark()
+             ? 'bg-white/5 border-white/10'
+             : 'bg-white border-slate-200'">
+        <div class="flex items-center gap-4 mb-8">
+          <div class="w-20 h-20 rounded-full"
+               [class]="themeService.isDark() ? 'bg-white/10' : 'bg-slate-200'"></div>
+          <div class="flex flex-col gap-2">
+            <div class="h-4 w-32 rounded"
+                 [class]="themeService.isDark() ? 'bg-white/10' : 'bg-slate-200'"></div>
+            <div class="h-3 w-24 rounded"
+                 [class]="themeService.isDark() ? 'bg-white/10' : 'bg-slate-200'"></div>
+          </div>
+        </div>
+        <div class="h-24 rounded-xl"
+             [class]="themeService.isDark() ? 'bg-white/10' : 'bg-slate-200'"></div>
+      </div>
+    }
+
+    @else if (profile()) {
+
+      <!-- Profile Card -->
+      <div class="rounded-2xl border p-6 sm:p-8 transition-all duration-300"
+           [class]="themeService.isDark()
+             ? 'bg-white/5 border-white/10'
+             : 'bg-white border-slate-200 shadow-sm'">
+
+        <form class="flex flex-col gap-6">
+
+          <!-- Avatar Section -->
+          <div class="flex flex-col items-center gap-4">
+
+            <!-- Avatar Preview -->
+            <div class="relative">
+              <div class="w-24 h-24 rounded-full overflow-hidden
+                          flex items-center justify-center
+                          bg-indigo-600 text-white text-3xl font-bold">
+                @if (avatarPreview()) {
+                  <img [src]="avatarPreview()"
+                       class="w-full h-full object-cover" />
+                } @else if (profile()!.avatarUrl) {
+                  <img [src]="profile()!.avatarUrl"
+                       class="w-full h-full object-cover" />
+                } @else {
+                  {{ profile()!.username.charAt(0).toUpperCase() }}
+                }
+              </div>
+
+              <!-- Camera Icon Overlay -->
+              <label class="absolute bottom-0 right-0
+                            w-8 h-8 rounded-full cursor-pointer
+                            flex items-center justify-center
+                            bg-indigo-600 hover:bg-indigo-500
+                            transition-colors duration-200
+                            shadow-lg">
+                <span class="material-icons text-white text-sm">photo_camera</span>
+                <input type="file"
+                       accept="image/*"
+                       class="hidden"
+                       (change)="onAvatarSelected($event)" />
+              </label>
+            </div>
+
+            <!-- Username & Email -->
+            <div class="text-center">
+              <p class="font-bold text-lg"
+                 [class]="themeService.isDark() ? 'text-white' : 'text-slate-800'">
+                {{ profile()!.username }}
+              </p>
+              <p class="text-sm"
+                 [class]="themeService.isDark() ? 'text-slate-400' : 'text-slate-500'">
+                {{ profile()!.email }}
+              </p>
+            </div>
+
+            <!-- Remove new avatar -->
+            @if (avatarPreview()) {
+              <button type="button"
+                      (click)="removeAvatar()"
+                      class="flex items-center gap-1 text-xs font-medium
+                             text-red-400 hover:text-red-500
+                             transition-colors duration-200">
+                <span class="material-icons text-sm">close</span>
+                Remove new photo
+              </button>
+            }
+
+          </div>
+
+          <!-- Divider -->
+          <div class="h-px"
+               [class]="themeService.isDark() ? 'bg-white/10' : 'bg-slate-100'"></div>
+
+          <!-- Bio Field -->
+          <div class="flex flex-col gap-1.5">
+            <label class="text-sm font-medium"
+                   [class]="themeService.isDark() ? 'text-slate-300' : 'text-slate-700'">
+              Bio
+              <span class="text-xs font-normal ml-1"
+                    [class]="themeService.isDark() ? 'text-slate-500' : 'text-slate-400'">
+                (max 160 characters)
+              </span>
+            </label>
+            <mat-form-field appearance="outline" class="w-full"
+                            [class]="themeService.isDark() ? 'dark-field' : 'light-field'">
+              <textarea matInput
+                        [formControl]="bioCtrl"
+                        rows="3"
+                        placeholder="Tell the world about yourself...">
+              </textarea>
+              <mat-hint align="end">
+                {{ bioCtrl.value?.length ?? 0 }} / 160
+              </mat-hint>
+              @if (bioCtrl.touched && bioCtrl.hasError('maxlength')) {
+                <mat-error>Bio cannot exceed 160 characters</mat-error>
+              }
+            </mat-form-field>
+          </div>
+
+          <!-- Info Fields (read-only) -->
+          <div class="flex flex-col gap-3">
+            <p class="text-xs font-semibold uppercase tracking-wider"
+               [class]="themeService.isDark() ? 'text-slate-500' : 'text-slate-400'">
+              Account Info
+            </p>
+
+            <!-- Username (readonly) -->
+            <div class="flex items-center gap-3 px-4 py-3 rounded-xl"
+                 [class]="themeService.isDark()
+                   ? 'bg-white/5 border border-white/10'
+                   : 'bg-slate-50 border border-slate-200'">
+              <span class="material-icons text-base"
+                    [class]="themeService.isDark()
+                      ? 'text-slate-400' : 'text-slate-400'">
+                person
+              </span>
+              <div>
+                <p class="text-xs"
+                   [class]="themeService.isDark() ? 'text-slate-500' : 'text-slate-400'">
+                  Username
+                </p>
+                <p class="text-sm font-medium"
+                   [class]="themeService.isDark() ? 'text-slate-300' : 'text-slate-600'">
+                  {{ profile()!.username }}
+                </p>
+              </div>
+            </div>
+
+            <!-- Email (readonly) -->
+            <div class="flex items-center gap-3 px-4 py-3 rounded-xl"
+                 [class]="themeService.isDark()
+                   ? 'bg-white/5 border border-white/10'
+                   : 'bg-slate-50 border border-slate-200'">
+              <span class="material-icons text-base"
+                    [class]="themeService.isDark()
+                      ? 'text-slate-400' : 'text-slate-400'">
+                email
+              </span>
+              <div>
+                <p class="text-xs"
+                   [class]="themeService.isDark() ? 'text-slate-500' : 'text-slate-400'">
+                  Email
+                </p>
+                <p class="text-sm font-medium"
+                   [class]="themeService.isDark() ? 'text-slate-300' : 'text-slate-600'">
+                  {{ profile()!.email }}
+                </p>
+              </div>
+            </div>
+
+            <!-- Member Since (readonly) -->
+            <div class="flex items-center gap-3 px-4 py-3 rounded-xl"
+                 [class]="themeService.isDark()
+                   ? 'bg-white/5 border border-white/10'
+                   : 'bg-slate-50 border border-slate-200'">
+              <span class="material-icons text-base"
+                    [class]="themeService.isDark()
+                      ? 'text-slate-400' : 'text-slate-400'">
+                calendar_today
+              </span>
+              <div>
+                <p class="text-xs"
+                   [class]="themeService.isDark() ? 'text-slate-500' : 'text-slate-400'">
+                  Member Since
+                </p>
+                <p class="text-sm font-medium"
+                   [class]="themeService.isDark() ? 'text-slate-300' : 'text-slate-600'">
+                  {{ profile()!.createdAt | date:'MMMM yyyy' }}
+                </p>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Actions -->
+          <div class="flex gap-3 pt-2">
+            <a [routerLink]="['/profile', authService.userId()]"
+               class="flex-1 flex items-center justify-center
+                      py-3 rounded-xl font-semibold text-sm
+                      transition-all duration-200 no-underline border"
+               [class]="themeService.isDark()
+                 ? 'border-white/20 text-slate-300 hover:bg-white/10'
+                 : 'border-slate-300 text-slate-600 hover:bg-slate-100'">
+              Cancel
+            </a>
+            <button type="button"
+                    (click)="onSave()"
+                    [disabled]="isSaving() || bioCtrl.invalid"
+                    class="flex-1 flex items-center justify-center gap-2
+                           bg-indigo-600 hover:bg-indigo-500
+                           disabled:opacity-60 disabled:cursor-not-allowed
+                           text-white font-semibold text-sm
+                           py-3 rounded-xl transition-all duration-200
+                           shadow-lg shadow-indigo-900/30">
+              @if (isSaving()) {
+                <mat-spinner diameter="18" />
+                <span>Saving...</span>
+              } @else {
+                <span class="material-icons text-base">save</span>
+                <span>Save Changes</span>
+              }
+            </button>
+          </div>
+
+        </form>
+      </div>
+
+      <!-- Danger Zone -->
+      <!-- <div class="rounded-2xl border mt-6 p-6"
+           [class]="themeService.isDark()
+             ? 'bg-red-500/5 border-red-500/20'
+             : 'bg-red-50 border-red-200'">
+        <h3 class="text-sm font-bold text-red-500 mb-1">Danger Zone</h3>
+        <p class="text-xs mb-4"
+           [class]="themeService.isDark() ? 'text-slate-400' : 'text-slate-500'">
+          Once you delete your account, there is no going back.
+        </p>
+        <button type="button"
+                class="flex items-center gap-2 px-4 py-2 rounded-xl
+                       text-sm font-semibold border border-red-500/50
+                       text-red-500 hover:bg-red-500 hover:text-white
+                       transition-all duration-200">
+          <span class="material-icons text-base">delete_forever</span>
+          Delete Account
+        </button>
+      </div> -->
+
+    }
+  </div>
+</div>

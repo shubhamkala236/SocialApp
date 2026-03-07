@@ -1,5 +1,7 @@
 ﻿// UserService.Infrastructure/Services/UserService.cs
+using MassTransit;
 using Microsoft.EntityFrameworkCore;
+using Shared.Contracts.Events;
 using UserService.Application.DTO;
 using UserService.Application.Interfaces;
 using UserService.Domain;
@@ -11,11 +13,13 @@ public class UserService : IUserService
 {
 	private readonly UserDbContext _context;
 	private readonly IPhotoService _photoService;
+	private readonly IPublishEndpoint _publishEndpoint;
 
-	public UserService(UserDbContext context, IPhotoService photoService)
+	public UserService(UserDbContext context, IPhotoService photoService, IPublishEndpoint publishEndpoint)
 	{
 		_context = context;
 		_photoService = photoService;
+		_publishEndpoint = publishEndpoint;
 	}
 
 	public async Task<UserProfileDto?> GetProfileAsync(Guid userId, Guid? currentUserId)
@@ -27,7 +31,29 @@ public class UserService : IUserService
 
 		if (profile is null) return null;
 
-		return MapToDto(profile, currentUserId);
+		// ✅ Get current user's profile PK for isFollowing check
+		Guid? currentProfileId = null;
+		if (currentUserId.HasValue)
+		{
+			var currentProfile = await _context.UserProfiles
+				.FirstOrDefaultAsync(u => u.UserId == currentUserId.Value);
+			currentProfileId = currentProfile?.Id;
+		}
+
+		return new UserProfileDto
+		{
+			UserId = profile.UserId,
+			Username = profile.Username,
+			Email = profile.Email,
+			Bio = profile.Bio,
+			AvatarUrl = profile.AvatarUrl,
+			FollowersCount = profile.Followers.Count,
+			FollowingCount = profile.Following.Count,
+			// ✅ Check using profile PKs
+			IsFollowing = currentProfileId.HasValue &&
+							 profile.Followers.Any(f => f.FollowerId == currentProfileId.Value),
+			CreatedAt = profile.CreatedAt
+		};
 	}
 
 	public async Task<UserProfileDto> GetOrCreateProfileAsync(
@@ -74,6 +100,13 @@ public class UserService : IUserService
 			{
 				profile.AvatarUrl = result.Url;
 				profile.AvatarPublicId = result.PublicId;
+
+				// ✅ Publish so AuthService can update JWT avatar
+				await _publishEndpoint.Publish(new UserAvatarUpdatedEvent
+				{
+					UserId = userId,
+					AvatarUrl = result.Url
+				});
 			}
 		}
 
@@ -85,12 +118,18 @@ public class UserService : IUserService
 
 	public async Task<IEnumerable<FollowDto>> GetFollowersAsync(Guid userId)
 	{
+		// ✅ Get profile first to get the actual PK
+		var profile = await _context.UserProfiles
+			.FirstOrDefaultAsync(u => u.UserId == userId);
+
+		if (profile is null) return Enumerable.Empty<FollowDto>();
+
 		return await _context.Follows
-			.Where(f => f.FollowingId == userId)
+			.Where(f => f.FollowingId == profile.Id)  // ✅ use profile.Id not userId
 			.Include(f => f.Follower)
 			.Select(f => new FollowDto
 			{
-				UserId = f.Follower.UserId,
+				UserId = f.Follower.UserId,          // ✅ return UserId for frontend
 				Username = f.Follower.Username,
 				AvatarUrl = f.Follower.AvatarUrl
 			})
@@ -99,12 +138,18 @@ public class UserService : IUserService
 
 	public async Task<IEnumerable<FollowDto>> GetFollowingAsync(Guid userId)
 	{
+		// ✅ Get profile first to get the actual PK
+		var profile = await _context.UserProfiles
+			.FirstOrDefaultAsync(u => u.UserId == userId);
+
+		if (profile is null) return Enumerable.Empty<FollowDto>();
+
 		return await _context.Follows
-			.Where(f => f.FollowerId == userId)
+			.Where(f => f.FollowerId == profile.Id)   // ✅ use profile.Id not userId
 			.Include(f => f.Following)
 			.Select(f => new FollowDto
 			{
-				UserId = f.Following.UserId,
+				UserId = f.Following.UserId,         // ✅ return UserId for frontend
 				Username = f.Following.Username,
 				AvatarUrl = f.Following.AvatarUrl
 			})
@@ -113,35 +158,57 @@ public class UserService : IUserService
 
 	public async Task<bool> FollowUserAsync(Guid followerId, Guid followingId)
 	{
-		// Can't follow yourself
 		if (followerId == followingId) return false;
 
-		// Already following
+		// ✅ Find profiles by UserId (the JWT claim)
+		var follower = await _context.UserProfiles
+			.FirstOrDefaultAsync(u => u.UserId == followerId);
+		var following = await _context.UserProfiles
+			.FirstOrDefaultAsync(u => u.UserId == followingId);
+
+		if (follower is null || following is null) return false;
+
+		// ✅ Check exists using Profile.Id not UserId
 		var exists = await _context.Follows
-			.AnyAsync(f => f.FollowerId == followerId && f.FollowingId == followingId);
+			.AnyAsync(f => f.FollowerId == follower.Id && f.FollowingId == following.Id);
 		if (exists) return false;
 
-		// Make sure both profiles exist
-		var followerExists = await _context.UserProfiles.AnyAsync(u => u.UserId == followerId);
-		var followingExists = await _context.UserProfiles.AnyAsync(u => u.UserId == followingId);
-		if (!followerExists || !followingExists) return false;
-
+		// ✅ Use follower.Id and following.Id — these are the actual PKs
 		_context.Follows.Add(new Follow
 		{
-			FollowerId = followerId,
-			FollowingId = followingId
+			FollowerId = follower.Id,   // ✅ UserProfile.Id (PK)
+			FollowingId = following.Id   // ✅ UserProfile.Id (PK)
 		});
 
 		await _context.SaveChangesAsync();
+
+		await _publishEndpoint.Publish(new UserFollowedEvent
+		{
+			FollowerId = followerId,
+			FollowerUsername = follower.Username,
+			FollowingId = followingId,
+			FollowingUsername = following.Username,
+			FollowedAt = DateTime.UtcNow
+		});
+
 		return true;
 	}
 
 	public async Task<bool> UnfollowUserAsync(Guid followerId, Guid followingId)
 	{
+		// ✅ Get profile PKs first
+		var followerProfile = await _context.UserProfiles
+			.FirstOrDefaultAsync(u => u.UserId == followerId);
+		var followingProfile = await _context.UserProfiles
+			.FirstOrDefaultAsync(u => u.UserId == followingId);
+
+		if (followerProfile is null || followingProfile is null) return false;
+
+		// ✅ Query using profile.Id not userId
 		var follow = await _context.Follows
 			.FirstOrDefaultAsync(f =>
-				f.FollowerId == followerId &&
-				f.FollowingId == followingId);
+				f.FollowerId == followerProfile.Id &&
+				f.FollowingId == followingProfile.Id);
 
 		if (follow is null) return false;
 

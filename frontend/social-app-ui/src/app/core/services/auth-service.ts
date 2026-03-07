@@ -17,6 +17,7 @@ export class AuthService {
   // Computed helpers
   isLoggedIn = computed(() => !!this.currentUser());
   username = computed(() => this.currentUser()?.username ?? '');
+  userId     = computed(() => this.currentUser()?.userId ?? '');
 
   constructor(private http: HttpClient, private router: Router) {}
 

@@ -1,6 +1,8 @@
 using System.Text;
 using InteractionService.Application.Interfaces;
+using InteractionService.Infrastructure.Consumers;
 using InteractionService.Infrastructure.Context;
+using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -35,6 +37,35 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 				Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Secret"]!))
 		};
 	});
+
+builder.Services.AddMassTransit(x =>
+{
+	// ── Register Consumers ────────────────────────
+	x.AddConsumer<PostDeletedConsumer>();
+	x.AddConsumer<UserDeletedConsumer>();
+
+	x.UsingRabbitMq((ctx, cfg) =>
+	{
+		cfg.Host(builder.Configuration["RabbitMQ:Host"], "/", h =>
+		{
+			h.Username(builder.Configuration["RabbitMQ:Username"]!);
+			h.Password(builder.Configuration["RabbitMQ:Password"]!);
+		});
+
+		// ── Receive Endpoints ─────────────────────
+		cfg.ReceiveEndpoint("interaction-post-deleted-queue", e =>
+		{
+			e.ConfigureConsumer<PostDeletedConsumer>(ctx);
+		});
+
+		cfg.ReceiveEndpoint("interaction-user-deleted-queue", e =>
+		{
+			e.ConfigureConsumer<UserDeletedConsumer>(ctx);
+		});
+
+		cfg.ConfigureEndpoints(ctx);
+	});
+});
 
 builder.Services.AddAuthorization();
 
