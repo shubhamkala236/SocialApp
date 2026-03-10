@@ -1,0 +1,270 @@
+version: '3.9'
+
+services:
+
+  # ── SQL Server ────────────────────────────────
+  sqlserver:
+    image: ${MSSQL_IMAGE}
+    container_name: socialapp-sqlserver
+    environment:
+      SA_PASSWORD: ${SA_PASSWORD}
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: Developer
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+    networks:
+      - socialapp-network
+    healthcheck:
+      test: ["CMD", "/opt/mssql-tools/bin/sqlcmd",
+             "-S", "localhost",
+             "-U", "sa",
+             "-P", "${SA_PASSWORD}",
+             "-Q", "SELECT 1"]
+      interval: 10s
+      retries: 10
+      timeout: 5s
+
+  # ── RabbitMQ ──────────────────────────────────
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: socialapp-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS}
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - socialapp-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      retries: 10
+      timeout: 5s
+
+  # ── Ollama ────────────────────────────────────
+  ollama:
+    image: ollama/ollama
+    container_name: socialapp-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - socialapp-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      retries: 5
+      timeout: 10s
+
+  # ── Ollama Model Puller ───────────────────────
+  # Runs once to pull the model then exits
+  ollama-pull:
+    image: ollama/ollama
+    container_name: socialapp-ollama-pull
+    depends_on:
+      ollama:
+        condition: service_healthy
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - socialapp-network
+    entrypoint: >
+      /bin/sh -c "
+        ollama pull ${OLLAMA_MODEL} &&
+        echo '✅ Model pulled successfully'
+      "
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    restart: "no"
+
+  # ── AuthService ───────────────────────────────
+  auth-service:
+    build:
+      context: ./backend/SocialApp
+      dockerfile: AuthService/Dockerfile
+    container_name: socialapp-auth
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: >
+        Server=sqlserver;Database=AuthDb;
+        User Id=sa;Password=${SA_PASSWORD};
+        TrustServerCertificate=True;
+      Jwt__Secret:   ${JWT_SECRET}
+      Jwt__Issuer:   ${JWT_ISSUER}
+      Jwt__Audience: ${JWT_AUDIENCE}
+      RabbitMQ__Host:     rabbitmq
+      RabbitMQ__Username: ${RABBITMQ_USER}
+      RabbitMQ__Password: ${RABBITMQ_PASS}
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - socialapp-network
+    restart: unless-stopped
+
+  # ── PostService ───────────────────────────────
+  post-service:
+    build:
+      context: ./backend/SocialApp
+      dockerfile: PostService/Dockerfile
+    container_name: socialapp-post
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: >
+        Server=sqlserver;Database=PostDb;
+        User Id=sa;Password=${SA_PASSWORD};
+        TrustServerCertificate=True;
+      Jwt__Secret:   ${JWT_SECRET}
+      Jwt__Issuer:   ${JWT_ISSUER}
+      Jwt__Audience: ${JWT_AUDIENCE}
+      RabbitMQ__Host:     rabbitmq
+      RabbitMQ__Username: ${RABBITMQ_USER}
+      RabbitMQ__Password: ${RABBITMQ_PASS}
+      Cloudinary__CloudName:  ${CLOUDINARY_CLOUD_NAME}
+      Cloudinary__ApiKey:     ${CLOUDINARY_API_KEY}
+      Cloudinary__ApiSecret:  ${CLOUDINARY_API_SECRET}
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - socialapp-network
+    restart: unless-stopped
+
+  # ── UserService ───────────────────────────────
+  user-service:
+    build:
+      context: ./backend/SocialApp
+      dockerfile: UserService/Dockerfile
+    container_name: socialapp-user
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: >
+        Server=sqlserver;Database=UserDb;
+        User Id=sa;Password=${SA_PASSWORD};
+        TrustServerCertificate=True;
+      Jwt__Secret:   ${JWT_SECRET}
+      Jwt__Issuer:   ${JWT_ISSUER}
+      Jwt__Audience: ${JWT_AUDIENCE}
+      RabbitMQ__Host:     rabbitmq
+      RabbitMQ__Username: ${RABBITMQ_USER}
+      RabbitMQ__Password: ${RABBITMQ_PASS}
+      Cloudinary__CloudName:  ${CLOUDINARY_CLOUD_NAME}
+      Cloudinary__ApiKey:     ${CLOUDINARY_API_KEY}
+      Cloudinary__ApiSecret:  ${CLOUDINARY_API_SECRET}
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - socialapp-network
+    restart: unless-stopped
+
+  # ── InteractionService ────────────────────────
+  interaction-service:
+    build:
+      context: ./backend/SocialApp
+      dockerfile: InteractionService/Dockerfile
+    container_name: socialapp-interaction
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: >
+        Server=sqlserver;Database=InteractionDb;
+        User Id=sa;Password=${SA_PASSWORD};
+        TrustServerCertificate=True;
+      Jwt__Secret:   ${JWT_SECRET}
+      Jwt__Issuer:   ${JWT_ISSUER}
+      Jwt__Audience: ${JWT_AUDIENCE}
+      RabbitMQ__Host:     rabbitmq
+      RabbitMQ__Username: ${RABBITMQ_USER}
+      RabbitMQ__Password: ${RABBITMQ_PASS}
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - socialapp-network
+    restart: unless-stopped
+
+  # ── AIService ─────────────────────────────────
+  ai-service:
+    build:
+      context: ./backend/SocialApp
+      dockerfile: AIService/Dockerfile
+    container_name: socialapp-ai
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      Jwt__Secret:   ${JWT_SECRET}
+      Jwt__Issuer:   ${JWT_ISSUER}
+      Jwt__Audience: ${JWT_AUDIENCE}
+      Ollama__Endpoint: http://ollama:11434   # ✅ uses container name
+      Ollama__ModelId:  ${OLLAMA_MODEL}
+    depends_on:
+      ollama:
+        condition: service_healthy
+    networks:
+      - socialapp-network
+    restart: unless-stopped
+
+  # ── API Gateway ───────────────────────────────
+  api-gateway:
+    build:
+      context: ./backend/SocialApp
+      dockerfile: ApiGateway/Dockerfile
+    container_name: socialapp-gateway
+    ports:
+      - "5000:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      Jwt__Secret:   ${JWT_SECRET}
+      Jwt__Issuer:   ${JWT_ISSUER}
+      Jwt__Audience: ${JWT_AUDIENCE}
+    depends_on:
+      - auth-service
+      - post-service
+      - user-service
+      - interaction-service
+      - ai-service
+    networks:
+      - socialapp-network
+    restart: unless-stopped
+
+  # ── Angular Frontend ──────────────────────────
+  frontend:
+    build:
+      context: ./frontend/social-app
+      dockerfile: Dockerfile
+    container_name: socialapp-frontend
+    ports:
+      - "4200:80"
+    depends_on:
+      - api-gateway
+    networks:
+      - socialapp-network
+    restart: unless-stopped
+
+networks:
+  socialapp-network:
+    driver: bridge
+
+volumes:
+  sqlserver_data:
+  rabbitmq_data:
+  ollama_data:
