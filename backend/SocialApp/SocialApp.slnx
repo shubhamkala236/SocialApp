@@ -1,4 +1,10 @@
 <Solution>
+  <Folder Name="/AIService/">
+    <Project Path="AIService/AIService.API/AIService.API.csproj" />
+    <Project Path="AIService/AIService.Application/AIService.Application.csproj" />
+    <Project Path="AIService/AIService.Domain/AIService.Domain.csproj" />
+    <Project Path="AIService/AIService.Infrastructure/AIService.Infrastructure.csproj" />
+  </Folder>
   <Folder Name="/AuthService/">
     <Project Path="AuthService/AuthService.API/AuthService.API.csproj" />
     <Project Path="AuthService/AuthService.Application/AuthService.Application.csproj" />
