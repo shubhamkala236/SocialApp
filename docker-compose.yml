@@ -86,8 +86,8 @@ services:
   # ── AuthService ───────────────────────────────
   auth-service:
     build:
-      context: .
-      dockerfile: AuthService/AuthService.API/Dockerfile
+      context: ./backend/SocialApp
+      dockerfile: AuthService/Dockerfile
     container_name: socialapp-auth
     environment:
       ASPNETCORE_ENVIRONMENT: Production
@@ -114,8 +114,8 @@ services:
   # ── PostService ───────────────────────────────
   post-service:
     build:
-      context: .
-      dockerfile: PostService/PostService.API/Dockerfile
+      context: ./backend/SocialApp
+      dockerfile: PostService/Dockerfile
     container_name: socialapp-post
     environment:
       ASPNETCORE_ENVIRONMENT: Production
@@ -145,8 +145,8 @@ services:
   # ── UserService ───────────────────────────────
   user-service:
     build:
-      context: .
-      dockerfile: UserService/UserService.API/Dockerfile
+      context: ./backend/SocialApp
+      dockerfile: UserService/Dockerfile
     container_name: socialapp-user
     environment:
       ASPNETCORE_ENVIRONMENT: Production
@@ -176,8 +176,8 @@ services:
   # ── InteractionService ────────────────────────
   interaction-service:
     build:
-      context: .
-      dockerfile: InteractionService/InteractionService.API/Dockerfile
+      context: ./backend/SocialApp
+      dockerfile: InteractionService/Dockerfile
     container_name: socialapp-interaction
     environment:
       ASPNETCORE_ENVIRONMENT: Production
@@ -204,8 +204,8 @@ services:
   # ── AIService ─────────────────────────────────
   ai-service:
     build:
-      context: .
-      dockerfile: AIService/AIService.API/Dockerfile
+      context: ./backend/SocialApp
+      dockerfile: AIService/Dockerfile
     container_name: socialapp-ai
     environment:
       ASPNETCORE_ENVIRONMENT: Production
@@ -225,7 +225,7 @@ services:
   # ── API Gateway ───────────────────────────────
   api-gateway:
     build:
-      context: .
+      context: ./backend/SocialApp
       dockerfile: ApiGateway/Dockerfile
     container_name: socialapp-gateway
     ports:
@@ -249,7 +249,7 @@ services:
   # ── Angular Frontend ──────────────────────────
   frontend:
     build:
-      context: ./social-app
+      context: ./frontend/social-app
       dockerfile: Dockerfile
     container_name: socialapp-frontend
     ports:

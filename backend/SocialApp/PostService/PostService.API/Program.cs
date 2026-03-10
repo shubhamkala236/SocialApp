@@ -88,6 +88,13 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+using (var scope = app.Services.CreateScope())
+{
+	var db = scope.ServiceProvider
+		.GetRequiredService<PostDbContext>(); // change per service
+	await db.Database.MigrateAsync(); // ✅ auto migrate on startup
+}
+
 
 if (app.Environment.IsDevelopment())
 {
