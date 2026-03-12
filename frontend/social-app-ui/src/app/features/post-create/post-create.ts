@@ -9,6 +9,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { PostService } from '../../core/services/post-service';
 import { ThemeService } from '../../core/services/theme-service';
 import { ToastService } from '../../core/services/toast.service';
+import { AiAssistant, AIResult } from '../../shared/components/ai-assistant/ai-assistant';
 
 @Component({
   selector: 'app-post-create',
@@ -16,7 +17,7 @@ import { ToastService } from '../../core/services/toast.service';
     ReactiveFormsModule, RouterLink,
     MatFormFieldModule, MatInputModule,
     MatButtonModule, MatIconModule,
-    MatProgressSpinnerModule
+    MatProgressSpinnerModule,AiAssistant
   ],
   templateUrl: './post-create.html',
   styleUrl: './post-create.scss',
@@ -36,6 +37,7 @@ export class PostCreate {
   selectedImage = signal<File | null>(null);
   imagePreview  = signal<string | null>(null);
   form!:FormGroup;
+  showAiPanel = signal(false);
 
   buildForm(){
     this.form = this.fb.group({
@@ -43,6 +45,18 @@ export class PostCreate {
       content: ['', [Validators.required, Validators.minLength(10)]]
     });
   }
+
+  onAiResult(result: AIResult) {
+    console.log('📝 onAiResult called with:', result);  // ✅ add this
+    
+    this.form.patchValue({
+      title:   result.title,
+      content: result.content
+    });
+
+    console.log('📝 Form value after patch:', this.form.value); // ✅ add this
+  }
+
 
   get titleCtrl()   { return this.form.controls['title']; }
   get contentCtrl() { return this.form.controls['content']; }

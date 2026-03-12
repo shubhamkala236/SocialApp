@@ -18,6 +18,14 @@ builder.Services.AddOllamaTextGeneration(
 builder.Services.AddKernel()
 	.Plugins.AddFromType<PostPlugin>("PostPlugin");
 
+builder.Services.AddControllers()
+	.AddJsonOptions(options =>
+	{
+		// ✅ Allow enums to be sent as strings ("Casual" instead of 0)
+		options.JsonSerializerOptions.Converters.Add(
+			new System.Text.Json.Serialization.JsonStringEnumConverter());
+	});
+
 // ── Services ──────────────────────────────────────
 builder.Services.AddScoped<IPostAssistantService, PostAssistantService>();
 

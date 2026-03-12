@@ -4,5 +4,5 @@ export const environment = {
     storageKey : 'social_app_user',
     themeKey : 'social_app_theme',
     production: true,
-    apiUrl: 'http://localhost:5000/api'  // Gateway exposed on 5000
+    //apiUrl: 'http://localhost:5000/api'  // Gateway exposed on 5000
 };

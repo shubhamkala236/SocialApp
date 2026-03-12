@@ -11,10 +11,11 @@
         
         Requirements:
         - Write a catchy TITLE (max 10 words)
-        - Write engaging CONTENT (100-200 words)
+        - Write engaging CONTENT (max 150 words)
         - Make it feel authentic and human
         - Match the requested tone exactly
         - Do NOT use hashtags unless asked
+        - At end also make sure that JSON braces is applied
         
         Respond ONLY in this exact JSON format with no extra text:
         {

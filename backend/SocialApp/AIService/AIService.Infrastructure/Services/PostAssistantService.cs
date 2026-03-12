@@ -31,7 +31,8 @@ namespace AIService.Infrastructure.Services
 					new OllamaPromptExecutionSettings
 					{
 						ModelId = "llama3.2",
-						Temperature = (float?)0.8
+						Temperature = (float?)0.8,
+						ExtensionData = new Dictionary<string, object> { ["num_predict"] = 500 } // Ollama's parameter for max tokens
 					});
 
 				var result = await _kernel.InvokeAsync(func, new KernelArguments
@@ -59,7 +60,8 @@ namespace AIService.Infrastructure.Services
 					new OllamaPromptExecutionSettings
 					{
 						ModelId = "llama3.2",
-						Temperature = (float?)0.6
+						Temperature = (float?)0.6,
+						ExtensionData = new Dictionary<string, object> { ["num_predict"] = 500 } // Ollama's parameter for max tokens
 					});
 
 				var result = await _kernel.InvokeAsync(func, new KernelArguments
@@ -88,7 +90,8 @@ namespace AIService.Infrastructure.Services
 					new OllamaPromptExecutionSettings
 					{
 						ModelId = "llama3.2",
-						Temperature = (float?)0.9
+						Temperature = (float?)0.9,
+						ExtensionData = new Dictionary<string, object> { ["num_predict"] = 500 } // Ollama's parameter for max tokens
 					});
 
 				var result = await _kernel.InvokeAsync(func, new KernelArguments
@@ -116,7 +119,8 @@ namespace AIService.Infrastructure.Services
 					new OllamaPromptExecutionSettings
 					{
 						ModelId = "llama3.2",
-						Temperature = (float?)0.4
+						Temperature = (float?)0.4,
+						ExtensionData = new Dictionary<string, object> { ["num_predict"] = 500 } // Ollama's parameter for max tokens
 					});
 
 				var result = await _kernel.InvokeAsync(func, new KernelArguments
@@ -143,7 +147,8 @@ namespace AIService.Infrastructure.Services
 					new OllamaPromptExecutionSettings
 					{
 						ModelId = "llama3.2",
-						Temperature = (float?)0.85
+						Temperature = (float?)0.85,
+						ExtensionData = new Dictionary<string, object> { ["num_predict"] = 500 } // Ollama's parameter for max tokens
 					});
 
 				var result = await _kernel.InvokeAsync(func, new KernelArguments
@@ -168,7 +173,8 @@ namespace AIService.Infrastructure.Services
 				new OllamaPromptExecutionSettings
 				{
 					ModelId = "llama3.2",
-					Temperature = (float?)0.8
+					Temperature = (float?)0.8,
+					ExtensionData = new Dictionary<string, object> { ["num_predict"] = 500 } // Ollama's parameter for max tokens
 				});
 
 			await foreach (var chunk in _kernel.InvokeStreamingAsync<string>(
@@ -189,21 +195,46 @@ namespace AIService.Infrastructure.Services
 		{
 			try
 			{
-				// Extract JSON from response (model sometimes adds extra text)
+				_logger.LogInformation("Raw AI response: {Raw}", raw);
+
+				// ✅ Strip markdown code blocks
+				raw = raw.Trim();
+				if (raw.StartsWith("```json"))
+					raw = raw.Substring(7);
+				if (raw.StartsWith("```"))
+					raw = raw.Substring(3);
+				if (raw.EndsWith("```"))
+					raw = raw.Substring(0, raw.Length - 3);
+
+				raw = raw.Trim();
+
+				// ✅ Extract JSON object
 				var start = raw.IndexOf('{');
-				var end = raw.LastIndexOf('}');
+				if (start == -1)
+					throw new Exception("No JSON object found");
 
-				if (start == -1 || end == -1)
-					throw new Exception("No JSON found in response");
+				var json = raw.Substring(start);
 
-				var json = raw.Substring(start, end - start + 1);
+				// ✅ Fix unclosed JSON — count braces and close if needed
+				json = FixUnclosedJson(json);
 
-				var parsed = JsonSerializer.Deserialize<JsonElement>(json);
+				_logger.LogInformation("Fixed JSON: {Json}", json);
+
+				var options = new JsonSerializerOptions
+				{
+					PropertyNameCaseInsensitive = true,
+					AllowTrailingCommas = true,
+				};
+
+				var parsed = JsonSerializer.Deserialize<PostAssistantResponseDto>(json, options);
+
+				if (parsed is null)
+					throw new Exception("Deserialization returned null");
 
 				return new PostAssistantResponseDto
 				{
-					Title = parsed.GetProperty("title").GetString() ?? string.Empty,
-					Content = parsed.GetProperty("content").GetString() ?? string.Empty,
+					Title = parsed.Title?.Trim() ?? string.Empty,
+					Content = parsed.Content?.Trim() ?? string.Empty,
 					ActionTaken = actionTaken
 				};
 			}
@@ -212,6 +243,83 @@ namespace AIService.Infrastructure.Services
 				_logger.LogError(ex, "Failed to parse AI response: {Raw}", raw);
 
 				// Fallback — return raw response
+				return new PostAssistantResponseDto
+				{
+					Title = "AI Generated Post",
+					Content = raw,
+					ActionTaken = actionTaken + " - Failed"
+				};
+			}
+		}
+
+		private static string FixUnclosedJson(string json)
+		{
+			// Count open/close braces
+			int openBraces = json.Count(c => c == '{');
+			int closeBraces = json.Count(c => c == '}');
+			int missing = openBraces - closeBraces;
+
+			if (missing <= 0) return json;
+
+			// ✅ Check if last string value is unclosed (missing closing quote)
+			var trimmed = json.TrimEnd();
+
+			// If last char is not a quote or brace, the string value is cut off
+			if (!trimmed.EndsWith("\"") && !trimmed.EndsWith("}"))
+			{
+				// Find last complete sentence or word — close the string cleanly
+				// Trim any trailing partial word/punctuation that looks incomplete
+				trimmed = trimmed.TrimEnd(',', ' ', '\n', '\r');
+				trimmed += "\"";  // close the open string
+			}
+
+			// Close any missing braces
+			for (int i = 0; i < missing; i++)
+				trimmed += "}";
+
+			return trimmed;
+		}
+
+		private PostAssistantResponseDto TryRegexExtract(string raw, string actionTaken)
+		{
+			try
+			{
+				var titleMatch = System.Text.RegularExpressions.Regex.Match(
+					raw, "\"title\"\\s*:\\s*\"([^\"]+)\"");
+				var contentMatch = System.Text.RegularExpressions.Regex.Match(
+					raw, "\"content\"\\s*:\\s*\"([\\s\\S]+?)\"(?:\\s*[,}])");
+
+				// If content regex fails (unclosed), grab everything after "content":
+				if (!contentMatch.Success)
+				{
+					contentMatch = System.Text.RegularExpressions.Regex.Match(
+						raw, "\"content\"\\s*:\\s*\"([\\s\\S]+)");
+				}
+
+				var title = titleMatch.Success
+					? titleMatch.Groups[1].Value.Trim()
+					: "AI Generated Post";
+
+				var content = contentMatch.Success
+					? contentMatch.Groups[1].Value
+						.Trim()
+						.TrimEnd('"', '}', ' ', '\n')
+						.Trim()
+					: raw;
+
+				_logger.LogInformation(
+					"Regex extraction succeeded — title: {Title}", title);
+
+				return new PostAssistantResponseDto
+				{
+					Title = title,
+					Content = content,
+					ActionTaken = actionTaken
+				};
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError(ex, "Regex extraction also failed");
 				return new PostAssistantResponseDto
 				{
 					Title = "AI Generated Post",
