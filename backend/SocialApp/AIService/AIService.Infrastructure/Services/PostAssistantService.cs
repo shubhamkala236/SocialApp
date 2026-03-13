@@ -6,9 +6,11 @@ using System.Text.Json;
 using AIService.Application.DTOs;
 using AIService.Application.Interfaces;
 using AIService.Infrastructure.Prompts;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.Connectors.Ollama;
+using static OllamaSharp.OllamaApiClient;
 
 namespace AIService.Infrastructure.Services
 {
@@ -16,10 +18,12 @@ namespace AIService.Infrastructure.Services
 	{
 		private readonly Kernel _kernel;
 		private readonly ILogger<PostAssistantService> _logger;
-		public PostAssistantService(Kernel kernel, ILogger<PostAssistantService> logger)
+		private readonly string _modelId;
+		public PostAssistantService(Kernel kernel, ILogger<PostAssistantService> logger, IConfiguration configuration)
 		{
 			_kernel = kernel;
 			_logger = logger;
+			_modelId = configuration["Ollama:ModelId"] ?? "llama3.2";
 		}
 		// ── Generate Post ─────────────────────────────────────────────────────
 		public async Task<PostAssistantResponseDto> GeneratePostAsync(GeneratePostRequestDto dto)
@@ -30,7 +34,7 @@ namespace AIService.Infrastructure.Services
 					PostPrompts.GeneratePost,
 					new OllamaPromptExecutionSettings
 					{
-						ModelId = "llama3.2",
+						ModelId = _modelId,
 						Temperature = (float?)0.8,
 						ExtensionData = new Dictionary<string, object> { ["num_predict"] = 500 } // Ollama's parameter for max tokens
 					});
@@ -59,7 +63,7 @@ namespace AIService.Infrastructure.Services
 					PostPrompts.ImprovePost,
 					new OllamaPromptExecutionSettings
 					{
-						ModelId = "llama3.2",
+						ModelId = _modelId,
 						Temperature = (float?)0.6,
 						ExtensionData = new Dictionary<string, object> { ["num_predict"] = 500 } // Ollama's parameter for max tokens
 					});
@@ -89,7 +93,7 @@ namespace AIService.Infrastructure.Services
 					PostPrompts.RephrasePost,
 					new OllamaPromptExecutionSettings
 					{
-						ModelId = "llama3.2",
+						ModelId = _modelId,
 						Temperature = (float?)0.9,
 						ExtensionData = new Dictionary<string, object> { ["num_predict"] = 500 } // Ollama's parameter for max tokens
 					});
@@ -118,7 +122,7 @@ namespace AIService.Infrastructure.Services
 					PostPrompts.SummarizePost,
 					new OllamaPromptExecutionSettings
 					{
-						ModelId = "llama3.2",
+						ModelId = _modelId,
 						Temperature = (float?)0.4,
 						ExtensionData = new Dictionary<string, object> { ["num_predict"] = 500 } // Ollama's parameter for max tokens
 					});
@@ -146,7 +150,7 @@ namespace AIService.Infrastructure.Services
 					PostPrompts.MakeHook,
 					new OllamaPromptExecutionSettings
 					{
-						ModelId = "llama3.2",
+						ModelId = _modelId,
 						Temperature = (float?)0.85,
 						ExtensionData = new Dictionary<string, object> { ["num_predict"] = 500 } // Ollama's parameter for max tokens
 					});
@@ -172,7 +176,7 @@ namespace AIService.Infrastructure.Services
 				PostPrompts.StreamGeneratePost,
 				new OllamaPromptExecutionSettings
 				{
-					ModelId = "llama3.2",
+					ModelId = _modelId,
 					Temperature = (float?)0.8,
 					ExtensionData = new Dictionary<string, object> { ["num_predict"] = 500 } // Ollama's parameter for max tokens
 				});
@@ -278,55 +282,6 @@ namespace AIService.Infrastructure.Services
 				trimmed += "}";
 
 			return trimmed;
-		}
-
-		private PostAssistantResponseDto TryRegexExtract(string raw, string actionTaken)
-		{
-			try
-			{
-				var titleMatch = System.Text.RegularExpressions.Regex.Match(
-					raw, "\"title\"\\s*:\\s*\"([^\"]+)\"");
-				var contentMatch = System.Text.RegularExpressions.Regex.Match(
-					raw, "\"content\"\\s*:\\s*\"([\\s\\S]+?)\"(?:\\s*[,}])");
-
-				// If content regex fails (unclosed), grab everything after "content":
-				if (!contentMatch.Success)
-				{
-					contentMatch = System.Text.RegularExpressions.Regex.Match(
-						raw, "\"content\"\\s*:\\s*\"([\\s\\S]+)");
-				}
-
-				var title = titleMatch.Success
-					? titleMatch.Groups[1].Value.Trim()
-					: "AI Generated Post";
-
-				var content = contentMatch.Success
-					? contentMatch.Groups[1].Value
-						.Trim()
-						.TrimEnd('"', '}', ' ', '\n')
-						.Trim()
-					: raw;
-
-				_logger.LogInformation(
-					"Regex extraction succeeded — title: {Title}", title);
-
-				return new PostAssistantResponseDto
-				{
-					Title = title,
-					Content = content,
-					ActionTaken = actionTaken
-				};
-			}
-			catch (Exception ex)
-			{
-				_logger.LogError(ex, "Regex extraction also failed");
-				return new PostAssistantResponseDto
-				{
-					Title = "AI Generated Post",
-					Content = raw,
-					ActionTaken = actionTaken
-				};
-			}
 		}
 	}
 }
